@@ -1,0 +1,46 @@
+Create an AMI (WordPressAMI)
+Once your EC2 instance is fully configured with WordPress:
+bash
+# Stop Apache to ensure consistency
+sudo systemctl stop httpd
+Go to EC2 Console → Instances → Actions → Create Image (AMI).
+Name it: WordPressAMI.
+This AMI will be used in the Launch Template for scaling.
+2️⃣ Create a Target Group (TG)
+Navigate to EC2 → Target Groups → Create Target Group.
+Choose Instances as target type.
+Health check:
+Protocol: HTTP
+Path: /index.php or /readme.html
+Register your EC2 instance (or later, ASG instances will auto-register).
+3️⃣ Create an Application Load Balancer (ALB)
+Go to EC2 → Load Balancers → Create Load Balancer → Application Load Balancer.
+Name: WordPress-ALB.
+Scheme: Internet-facing.
+Select VPC and subnets (at least 2 AZs).
+Security Group: Allow HTTP (80).
+Listener: HTTP → Forward to Target Group (WordPress-TG).
+4️⃣ Create a Launch Template
+Navigate to EC2 → Launch Templates → Create Launch Template.
+Name: WordPress-LT.
+Select AMI: WordPressAMI.
+Instance type: t2.micro (or as per requirement).
+Security Group: Allow HTTP (80).
+User Data (optional): Add startup script if needed.
+5️⃣ Create an Auto Scaling Group (ASG)
+Go to EC2 → Auto Scaling Groups → Create Auto Scaling Group.
+Name: WordPress-ASG.
+Select Launch Template: WordPress-LT.
+Attach to Target Group: WordPress-TG.
+Configure scaling policies:
+Min size: 2
+Desired capacity: 2
+Max size: 5
+Enable health checks (EC2 + ELB).
+Scaling policy example:
+Scale out: Add 1 instance if CPU > 70% for 5 minutes.
+Scale in: Remove 1 instance if CPU < 30% for 10 minutes.
+6️⃣ Access Application
+Use the ALB DNS name (e.g., WordPress-ALB-123456.ap-south-1.elb.amazonaws.com).
+It will distribute traffic across EC2 instances in multiple AZs.
+ASG ensures scaling up/down automatically.
